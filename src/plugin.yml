@@ -1,0 +1,4 @@
+main: ru.mrbrikster.safeauth.Main
+version: 1.0
+author: MrBrikster
+name: SafeAuth

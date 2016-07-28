@@ -8,6 +8,8 @@ import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerLoginEvent.Result;
 import org.bukkit.event.player.PlayerQuitEvent;
 
+import ru.mrbrikster.safeauth.AuthManager.TaskType;
+
 public class EventListener implements Listener {
 	
 	@EventHandler
@@ -25,6 +27,11 @@ public class EventListener implements Listener {
 	
 	@EventHandler
 	public void onJoin(PlayerJoinEvent e) {
+		if (PluginManager.isRegistred(e.getPlayer()) && PluginManager.isSessionActive(e.getPlayer())) {
+			PluginManager.sendMainServer(e.getPlayer());
+			return;
+		}
+		
 		// Start login task
 		PluginManager.startTask(e.getPlayer(), PluginManager.isRegistred(e.getPlayer()) ? TaskType.LOGIN : TaskType.REGISTER);
 	}

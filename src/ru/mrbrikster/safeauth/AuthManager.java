@@ -1,15 +1,33 @@
 package ru.mrbrikster.safeauth;
 
+import java.lang.reflect.Field;
+
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
+import org.bukkit.command.CommandMap;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 
 public class AuthManager extends Command {
+	
+	public enum TaskType {
+		LOGIN,
+		REGISTER;
+	}
 
 	protected AuthManager(String name) {
 		super(name);
+		
+		
+		try {
+			Field commandMapField = Main.getPlugin().getServer().getClass().getDeclaredField("commandMap");
+			commandMapField.setAccessible(true);
+			CommandMap commandMap = (CommandMap) commandMapField.get(Main.getPlugin().getServer());
+			commandMap.register(name, this);
+		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
+			e.printStackTrace();
+		}
 	}
 
 	@Override
@@ -45,7 +63,7 @@ public class AuthManager extends Command {
 			return;
 		}
 		
-		String passwordHash = PluginManager.createHash(args[0]);
+		String passwordHash = PluginManager.createPasswordHash(args[0]);
 		
 		PluginManager.register(sender, passwordHash);
 	}
@@ -55,7 +73,7 @@ public class AuthManager extends Command {
 			return;
 		}
 		
-		String passwordHash = PluginManager.createHash(args[0]);
+		String passwordHash = PluginManager.createPasswordHash(args[0]);
 		
 		PluginManager.login(sender, passwordHash);
 	}

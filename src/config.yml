@@ -1,0 +1,42 @@
+##*
+##* SafeAuth 1.0
+##* Система авторизации
+###
+### Автор - MrBrikster
+###
+### Версия сервера - 1.9
+###
+###
+
+### Данные для подключения к базе данных
+sql:
+  username: root
+  password: ''
+  hostname: 127.0.0.1
+  database: safeauth
+  port: 3306
+
+# Блокировать все команды, кроме написанных в спике "allowedCommands"?
+blockCommands: true
+
+# Максимально допустимая длина никнейма
+maxNameLength: 16
+
+# Допустимые в никнеймах символы (В нижнем регистре)
+allowedSymbols: 'qwertyuiopasdfghjklzxcvbnm1234567890'
+
+# Разрешённые команды
+allowedCommands:
+- l
+- login
+- reg
+- register
+
+# Режим прокси для переключения между серверами (BUNGEE или LILYPAD)
+proxy: BUNGEE
+
+# Режим отладки
+debug: false
+
+# Длина сессии в миллисекундах (По-умолчанию - 3 дня). 0 для отключения сессий.
+sessionTime: 259200
