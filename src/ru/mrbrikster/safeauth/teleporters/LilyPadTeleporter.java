@@ -1,5 +1,6 @@
 package ru.mrbrikster.safeauth.teleporters;
 
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 import lilypad.client.connect.api.Connect;
@@ -17,12 +18,16 @@ public class LilyPadTeleporter {
             c.request(new RedirectRequest(Main.getMainConfig().getString("mainServer"), player.getName())).registerListener(new FutureResultListener<RedirectResult>() {
             	@Override
             	public void onResult(RedirectResult redirectResult) {
-                    if (redirectResult.getStatusCode() != StatusCode.SUCCESS) player.kickPlayer("§cОшибка подключения к серверу.");
+                    if (redirectResult.getStatusCode() != StatusCode.SUCCESS) player.kickPlayer(format(Main.getLocConfig().getString("errorConnectServer")));
                 }
             });
         } catch (Exception e) {
-            player.kickPlayer("§cОшибка подключения к серверу.");
+            player.kickPlayer(format(Main.getLocConfig().getString("errorConnectServer")));
         }
+	}
+	
+	private static String format(String string) {
+		return ChatColor.translateAlternateColorCodes('&', string);
 	}
 
 }

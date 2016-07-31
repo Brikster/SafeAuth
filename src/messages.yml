@@ -16,6 +16,7 @@ wrongPassword: '&cНеверный пароль.'
 alreadyRegistred: '&cВы уже зарегистрированы'
 notRegistred: '&cВы не зарегистрированы!'
 manyErrors: '&cВы ошиблись слишком много раз.'
+errorConnectServer: '&cОшибка при подключении к серверу.'
 
 successfulRecovering: '&aУспешно! Скоро Вам придёт письмо с новым паролем!'
 
