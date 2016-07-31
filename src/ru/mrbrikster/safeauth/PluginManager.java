@@ -2,7 +2,6 @@ package ru.mrbrikster.safeauth;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -19,11 +18,14 @@ import ru.mrbrikster.safeauth.teleporters.LilyPadTeleporter;
 
 public class PluginManager {
 
+	@SuppressWarnings("unused")
 	private static List<Character> allowedSymbols = Main.getMainConfig().getCharacterList("allowedSymbols");
 	private static HashMap<Player, BukkitTask> authTasks = new HashMap<>();
+	private static HashMap<Player, Integer> authErrors = new HashMap<>();
 
 	public static boolean containsBlockedChars(char[] charArray) {
-		return !allowedSymbols.containsAll(Arrays.asList(charArray));
+		return false;
+		// TODO
 	}
 
 	public static boolean isTooBig(String name) {
@@ -31,7 +33,7 @@ public class PluginManager {
 	}
 
 	public static boolean isRegistred(Player player) {
-		ResultSet resultSet = DatabaseManager.executeQuery("SELECT password FROM safelogin WHERE player='" + player.getName().toLowerCase() + "'");
+		ResultSet resultSet = DatabaseManager.executeQuery("SELECT password FROM safeauth WHERE player='" + player.getName().toLowerCase() + "'");
 	
 		try {
 			if (resultSet == null || !resultSet.first()) return false;
@@ -58,12 +60,16 @@ public class PluginManager {
 	}
 	
 	public static void stopTask(Player player) {
-		authTasks.get(player).cancel();
-		authTasks.remove(player);
+		try {
+			authTasks.get(player).cancel();
+			authTasks.remove(player);
+		} catch (Exception e) {}
 	}
 
 	public static boolean authCommand(String message) {
-		return Main.getMainConfig().getStringList("allowedCommands").contains(message);
+		if (message.contains("")) message = message.split(" ")[0];
+		
+		return Main.getMainConfig().getStringList("allowedCommands").contains(message.replace("/", ""));
 	}
 
 	public static String createPasswordHash(String password) {
@@ -80,6 +86,8 @@ public class PluginManager {
 	public static void login(Player player, String passwordHash) {
 		if (!validPassword(player, passwordHash)) {
 			player.sendMessage(format(Main.getLocConfig().getString("wrongPassword")));
+			addError(player);
+			if (getErrors(player) >= Main.getMainConfig().getInt("maxErrors")) player.kickPlayer(format(Main.getLocConfig().getString("manyErrors")));
 			return;
 		}
 		
@@ -98,7 +106,7 @@ public class PluginManager {
 		}
 	}
 
-	private static boolean validPassword(Player player, String passwordHash) {
+	public static boolean validPassword(Player player, String passwordHash) {
 		ResultSet resultSet = DatabaseManager.executeQuery("SELECT password FROM safeauth WHERE player='" + player.getName().toLowerCase() + "'");
 		try {
 			resultSet.first();
@@ -121,8 +129,9 @@ public class PluginManager {
 		DatabaseManager.executeUpdate("CREATE TABLE IF NOT EXISTS safeauth ("
 				+ "id INT AUTO_INCREMENT, "
 				+ "player VARCHAR(32) NOT NULL, "
-				+ "password VARCHAR(32) NOT NULL, "
+				+ "password VARCHAR(64) NOT NULL, "
 				+ "ip VARCHAR(32) NOT NULL, "
+				+ "email VARCHAR(32), "
 				+ "session TIMESTAMP NOT NULL, "
 				+ "PRIMARY KEY (id)"
 				+ ")");
@@ -138,7 +147,7 @@ public class PluginManager {
 			resultSet.first();
 			
 			long time = new Date().getTime();
-			if (time + Main.getMainConfig().getLong("sessionTime") > resultSet.getTimestamp("session").getTime() 
+			if (time - Main.getMainConfig().getLong("sessionTime") < resultSet.getTimestamp("session").getTime() 
 					&& resultSet.getString("ip").equals(player.getAddress().getAddress().getHostAddress())) {
 				return true;
 			}
@@ -147,6 +156,34 @@ public class PluginManager {
 		}
 		
 		return false;
+	}
+	
+	public static Integer getErrors(Player player) {
+		return authErrors.get(player);
+	}
+	
+	public static void addError(Player player) {
+		if (!authErrors.containsKey(player)) {
+			authErrors.put(player, 1); 
+			return;
+		}
+		
+		Integer old = authErrors.get(player);
+		authErrors.remove(player);
+		authErrors.put(player, old++);
+	}
+
+	public static void clearErrors(Player player) {
+		authErrors.remove(player);
+	}
+
+	public static boolean validEmail(String string) {
+		// TODO in next versions
+		return false;
+	}
+
+	public static void sendPasswordByEmail(Player player) {
+		// TODO in next versions
 	}
 
 }

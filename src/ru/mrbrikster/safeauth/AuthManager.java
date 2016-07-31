@@ -49,11 +49,43 @@ public class AuthManager extends Command {
 		case "reg":
 			this.performRegister(player, label, args);
 			break;
+		case "email":
+			this.emailCommand(player, label, args);
+			break;
 		}
 		return true;
 	}
 
+	private void emailCommand(Player player, String label, String[] args) {
+		if (args.length == 0) {
+			for (String string : Main.getLocConfig().getStringList("emailHelp")) {
+				player.sendMessage(format(string));
+			}
+			return;
+		}
+		
+		switch(args[1].toLowerCase()) {
+		case "recovery":
+			if (args.length != 2) {
+				for (String string : Main.getLocConfig().getStringList("emailHelp")) {
+					player.sendMessage(format(string));
+				}
+				return;
+			}
+			
+			if (!PluginManager.validEmail(args[1])) {
+				PluginManager.sendPasswordByEmail(player);
+				player.sendMessage(format(Main.getLocConfig().getString("successfulRecovering")));
+			}
+		}
+	}
+
 	private void performRegister(Player sender, String label, String[] args) {
+		if (PluginManager.isRegistred(sender)) {
+			sender.sendMessage(format(Main.getLocConfig().getString("alreadyRegistred")));
+			return;
+		}
+		
 		if (args.length != 2) {
 			return;
 		}
@@ -69,6 +101,11 @@ public class AuthManager extends Command {
 	}
 
 	private void performLogin(Player sender, String label, String[] args) {
+		if (!PluginManager.isRegistred(sender)) {
+			sender.sendMessage(format(Main.getLocConfig().getString("notRegistred")));
+			return;
+		}
+		
 		if (args.length != 1) {
 			return;
 		}

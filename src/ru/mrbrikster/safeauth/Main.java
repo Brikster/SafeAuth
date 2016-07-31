@@ -20,6 +20,10 @@ public class Main extends JavaPlugin {
 		saveDefaultConfig();
 		config = getConfig();
 		
+		DatabaseManager.connect();
+		
+		if (!DatabaseManager.isConnected()) return;
+		
 		// Load commands
 		new AuthManager("login");
 		new AuthManager("l");
@@ -27,6 +31,8 @@ public class Main extends JavaPlugin {
 		new AuthManager("reg");
 		
 		this.getServer().getPluginManager().registerEvents(new EventListener(), this);
+		
+		PluginManager.createTable();
 	}
 	
 	public static Plugin getPlugin() {
@@ -44,7 +50,7 @@ public class Main extends JavaPlugin {
 			if (!locFile.exists()) {
 				try {
 					locFile.createNewFile();
-					FileConfiguration temp = YamlConfiguration.loadConfiguration(Main.class.getResourceAsStream("messages.yml"));
+					FileConfiguration temp = YamlConfiguration.loadConfiguration(Main.class.getResourceAsStream("/messages.yml"));
 					temp.save(locFile);
 				} catch (IOException e) {
 					e.printStackTrace();

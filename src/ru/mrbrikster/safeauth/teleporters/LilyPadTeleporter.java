@@ -17,13 +17,10 @@ public class LilyPadTeleporter {
             c.request(new RedirectRequest(Main.getMainConfig().getString("mainServer"), player.getName())).registerListener(new FutureResultListener<RedirectResult>() {
             	@Override
             	public void onResult(RedirectResult redirectResult) {
-                    if (redirectResult.getStatusCode() == StatusCode.SUCCESS) {
-                        return;
-                    }
-                    player.kickPlayer("§cОшибка подключения к серверу.");
+                    if (redirectResult.getStatusCode() != StatusCode.SUCCESS) player.kickPlayer("§cОшибка подключения к серверу.");
                 }
             });
-        } catch (Exception exception) {
+        } catch (Exception e) {
             player.kickPlayer("§cОшибка подключения к серверу.");
         }
 	}

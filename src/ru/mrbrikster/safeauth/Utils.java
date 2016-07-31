@@ -3,6 +3,8 @@ package ru.mrbrikster.safeauth;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.codec.binary.Hex;
 
@@ -36,6 +38,14 @@ public class Utils {
 		}
 		
 		return null;
+	}
+
+	public static List<Object> asList(char[] charArray) {
+		List<Object> list = new ArrayList<>();
+		for (char c : charArray) {
+			list.add(Character.toLowerCase(c));
+		}
+		return list;
 	}
 
 }

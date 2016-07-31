@@ -22,6 +22,9 @@ blockCommands: true
 # Максимально допустимая длина никнейма
 maxNameLength: 16
 
+# Максимальное количество ошибок в наборе пароля
+maxErrors: 3
+
 # Допустимые в никнеймах символы (В нижнем регистре)
 allowedSymbols: 'qwertyuiopasdfghjklzxcvbnm1234567890'
 
@@ -34,6 +37,9 @@ allowedCommands:
 
 # Режим прокси для переключения между серверами (BUNGEE или LILYPAD)
 proxy: BUNGEE
+
+# Главный сервер, на который будет происходить телепортация после авторизации
+mainServer: Survival
 
 # Режим отладки
 debug: false
