@@ -4,7 +4,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -18,14 +17,12 @@ import ru.mrbrikster.safeauth.teleporters.LilyPadTeleporter;
 
 public class PluginManager {
 
-	@SuppressWarnings("unused")
-	private static List<Character> allowedSymbols = Main.getMainConfig().getCharacterList("allowedSymbols");
+	private static String allowedSymbols = Main.getMainConfig().getString("allowedSymbols");
 	private static HashMap<Player, BukkitTask> authTasks = new HashMap<>();
 	private static HashMap<Player, Integer> authErrors = new HashMap<>();
 
-	public static boolean containsBlockedChars(char[] charArray) {
-		return false;
-		// TODO
+	public static boolean containsBlockedChars(String playerName) {
+		return !playerName.matches("^" + allowedSymbols);
 	}
 
 	public static boolean isTooBig(String name) {
@@ -49,6 +46,7 @@ public class PluginManager {
 
 			@Override
 			public void run() {
+				if (!player.isOnline()) return;
 				player.sendMessage(format(Main.getLocConfig().getString(taskType == TaskType.LOGIN ? "loginMessage" : "registerMessage")));
 			}
 
@@ -56,14 +54,14 @@ public class PluginManager {
 				return ChatColor.translateAlternateColorCodes('&', string);
 			}
 			
-		}.runTaskTimerAsynchronously(Main.getPlugin(), 20L, 40L)));
+		}.runTaskTimer(Main.getPlugin(), 20L, 40L)));
 	}
 	
 	public static void stopTask(Player player) {
-		try {
-			authTasks.get(player).cancel();
-			authTasks.remove(player);
-		} catch (Exception e) {}
+		if (!authTasks.containsKey(player)) return;
+		
+		authTasks.get(player).cancel();
+		authTasks.remove(player);
 	}
 
 	public static boolean authCommand(String message) {
@@ -73,18 +71,24 @@ public class PluginManager {
 	}
 
 	public static String createPasswordHash(String password) {
-		return Utils.toSha256(Utils.toSha256(password) + Utils.toMd5(password));
+		if (Main.getMainConfig().getBoolean("useSha256")) {
+			String salt = Utils.getRandomString(16);
+			return "$SHA$" + salt + "$" + Utils.toSha256(Utils.toSha256(password) + salt);
+		} else {
+			return Utils.toSha256(Utils.toSha256(password) + Utils.toMd5(password));
+		}
 	}
 
 	public static void register(Player player, String passwordHash) {
-		DatabaseManager.executeUpdate("INSERT INTO safeauth (player, ip, password, session) VALUES ('" + player.getName().toLowerCase() + "', '" + player.getAddress().getAddress().getHostAddress() + "', '" + passwordHash  + "', from_unixtime(" + new Date().getTime()/1000 + "))");
+		DatabaseManager.executeUpdate("INSERT INTO safeauth (player, ip, password, session, realname) VALUES ('" + player.getName().toLowerCase() + "', '" + player.getAddress().getAddress().getHostAddress() + "', '" + passwordHash  + "', from_unixtime(" + new Date().getTime()/1000 + "), '" + player.getName() + "')");
 		player.sendMessage(format(Main.getLocConfig().getString("successfulRegister")));
 		
+		stopTask(player);
 		sendMainServer(player);
 	}
 
-	public static void login(Player player, String passwordHash) {
-		if (!validPassword(player, passwordHash)) {
+	public static void login(Player player, String password) {
+		if (!validPassword(player, password)) {
 			player.sendMessage(format(Main.getLocConfig().getString("wrongPassword")));
 			addError(player);
 			if (getErrors(player) >= Main.getMainConfig().getInt("maxErrors")) player.kickPlayer(format(Main.getLocConfig().getString("manyErrors")));
@@ -94,6 +98,7 @@ public class PluginManager {
 		DatabaseManager.executeUpdate("UPDATE safeauth SET session=from_unixtime(" + new Date().getTime()/1000 + ") WHERE player='" + player.getName().toLowerCase() + "'");
 		
 		player.sendMessage(format(Main.getLocConfig().getString("loggedIn")));
+		stopTask(player);
 		sendMainServer(player);
 	}
 	
@@ -106,11 +111,17 @@ public class PluginManager {
 		}
 	}
 
-	public static boolean validPassword(Player player, String passwordHash) {
+	public static boolean validPassword(Player player, String password) {
 		ResultSet resultSet = DatabaseManager.executeQuery("SELECT password FROM safeauth WHERE player='" + player.getName().toLowerCase() + "'");
 		try {
 			resultSet.first();
-			return (resultSet.getString("password").equals(passwordHash));
+			if (Main.getMainConfig().getBoolean("useSha256")) {
+				String string = resultSet.getString("password");
+				String salt = string.split("\\$")[2];
+				return string.equals("$SHA$" + salt + "$" + Utils.toSha256(Utils.toSha256(password) + salt));
+			} else {
+				return (resultSet.getString("password").equals(createPasswordHash(password)));
+			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -128,10 +139,11 @@ public class PluginManager {
 	public static void createTable() {
 		DatabaseManager.executeUpdate("CREATE TABLE IF NOT EXISTS safeauth ("
 				+ "id INT AUTO_INCREMENT, "
-				+ "player VARCHAR(32) NOT NULL, "
-				+ "password VARCHAR(64) NOT NULL, "
-				+ "ip VARCHAR(32) NOT NULL, "
-				+ "email VARCHAR(32), "
+				+ "player VARCHAR(255) NOT NULL, "
+				+ "realname VARCHAR(255) NOT NULL, "
+				+ "password VARCHAR(255) NOT NULL, "
+				+ "ip VARCHAR(255) NOT NULL, "
+				+ "email VARCHAR(255), "
 				+ "session TIMESTAMP NOT NULL, "
 				+ "PRIMARY KEY (id)"
 				+ ")");
@@ -143,11 +155,11 @@ public class PluginManager {
 
 	public static boolean isSessionActive(Player player) {
 		ResultSet resultSet = DatabaseManager.executeQuery("SELECT session, ip FROM safeauth WHERE player='" + player.getName().toLowerCase() + "'");
+		
 		try {
-			resultSet.first();
-			
+			if (resultSet == null || !resultSet.first()) return false;
 			long time = new Date().getTime();
-			if (time - Main.getMainConfig().getLong("sessionTime") < resultSet.getTimestamp("session").getTime() 
+			if ((time - (Main.getMainConfig().getInt("sessionTime") * 1000)) <= resultSet.getTimestamp("session").getTime() 
 					&& resultSet.getString("ip").equals(player.getAddress().getAddress().getHostAddress())) {
 				return true;
 			}
@@ -170,11 +182,11 @@ public class PluginManager {
 		
 		Integer old = authErrors.get(player);
 		authErrors.remove(player);
-		authErrors.put(player, old++);
+		authErrors.put(player, ++old);
 	}
 
 	public static void clearErrors(Player player) {
-		authErrors.remove(player);
+		if (authErrors.containsKey(player)) authErrors.remove(player);
 	}
 
 	public static boolean validEmail(String string) {

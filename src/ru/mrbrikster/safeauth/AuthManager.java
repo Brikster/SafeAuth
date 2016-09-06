@@ -110,9 +110,7 @@ public class AuthManager extends Command {
 			return;
 		}
 		
-		String passwordHash = PluginManager.createPasswordHash(args[0]);
-		
-		PluginManager.login(sender, passwordHash);
+		PluginManager.login(sender, args[0]);
 	}
 	
 	private String format(String string) {

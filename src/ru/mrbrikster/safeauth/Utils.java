@@ -1,8 +1,10 @@
 package ru.mrbrikster.safeauth;
 
+import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,6 +48,21 @@ public class Utils {
 			list.add(Character.toLowerCase(c));
 		}
 		return list;
+	}
+
+	public static String getRandomString(int length) {
+		try {
+			byte[] msg = new byte[40];
+	        new SecureRandom().nextBytes(msg);
+	        MessageDigest sha1;
+			sha1 = MessageDigest.getInstance("SHA1");
+			sha1.reset();
+	        byte[] digest = sha1.digest(msg);
+	        return String.format("%0" + (digest.length << 1) + "x", new BigInteger(1,digest)).substring(0, length);
+		} catch (NoSuchAlgorithmException e) {
+			return "";
+		}
+        
 	}
 
 }

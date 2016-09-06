@@ -1,13 +1,13 @@
 package ru.mrbrikster.safeauth;
 
 import org.bukkit.ChatColor;
-import org.bukkit.GameMode;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerChatTabCompleteEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -21,7 +21,7 @@ public class EventListener implements Listener {
 	
 	@EventHandler
 	public void onLogin(PlayerLoginEvent e) {
-		if (PluginManager.containsBlockedChars(e.getPlayer().getName().toCharArray())) {
+		if (PluginManager.containsBlockedChars(e.getPlayer().getName())) {
 			e.disallow(Result.KICK_OTHER, format(Main.getLocConfig().getString("blockedSymbols")));
 			return;
 		} 
@@ -38,8 +38,6 @@ public class EventListener implements Listener {
 
 	@EventHandler
 	public void onJoin(PlayerJoinEvent e) {
-		e.getPlayer().setGameMode(GameMode.ADVENTURE);
-		
 		if (PluginManager.isRegistred(e.getPlayer()) && PluginManager.isSessionActive(e.getPlayer())) {
 			PluginManager.sendMainServer(e.getPlayer());
 			return;
@@ -51,8 +49,6 @@ public class EventListener implements Listener {
 	
 	@EventHandler
 	public void onQuit(PlayerQuitEvent e) {
-		// Stop login task
-		PluginManager.stopTask(e.getPlayer());
 		PluginManager.clearErrors(e.getPlayer());
 	}
 	
@@ -62,8 +58,13 @@ public class EventListener implements Listener {
 	}
 	
 	@EventHandler
+    public void onPlayerClickTab(PlayerChatTabCompleteEvent e)  {
+		e.getTabCompletions().clear();
+    }
+	
+	@EventHandler
 	public void onBlockPlace(BlockPlaceEvent e) {
-		e.setBuild(false);
+		e.setCancelled(true);
 	}
 	
 	@EventHandler
