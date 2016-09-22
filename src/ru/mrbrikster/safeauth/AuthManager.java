@@ -95,6 +95,11 @@ public class AuthManager extends Command {
 			return;
 		}
 		
+		if (PluginManager.registeredPlayers(sender.getAddress().getAddress().getHostAddress()) >= 2) {
+			sender.sendMessage(format(Main.getLocConfig().getString("manyRegisterings")));
+			return;
+		}
+		
 		String passwordHash = PluginManager.createPasswordHash(args[0]);
 		
 		PluginManager.register(sender, passwordHash);

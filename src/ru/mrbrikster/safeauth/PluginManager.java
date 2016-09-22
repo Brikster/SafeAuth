@@ -88,6 +88,12 @@ public class PluginManager {
 	}
 
 	public static void login(Player player, String password) {
+		String validName = validName(player.getName());
+		if (validName != player.getName()) {
+			player.kickPlayer(ChatColor.translateAlternateColorCodes('&', Main.getLocConfig().getString("wrongName").replace("%name%", validName)));
+			return;
+		}
+		
 		if (!validPassword(player, password)) {
 			player.sendMessage(format(Main.getLocConfig().getString("wrongPassword")));
 			addError(player);
@@ -102,6 +108,20 @@ public class PluginManager {
 		sendMainServer(player);
 	}
 	
+
+	private static String validName(String name) {
+		ResultSet resultSet = DatabaseManager.executeQuery("SELECT realName FROM safeauth WHERE player='" + name.toLowerCase() + "'");
+	
+		try {
+			if (resultSet == null || !resultSet.first()) return "";
+			
+			return resultSet.getString("realName");
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		return "";
+	}
 
 	public static void sendMainServer(Player player) {
 		if (Main.getMainConfig().getString("proxy").equalsIgnoreCase("BUNGEE")) {
@@ -196,6 +216,24 @@ public class PluginManager {
 
 	public static void sendPasswordByEmail(Player player) {
 		// TODO in next versions
+	}
+
+	public static int registeredPlayers(String hostAddress) {
+		ResultSet resultSet = DatabaseManager.executeQuery("SELECT player FROM safeauth WHERE ip='" + hostAddress + "'");
+		
+		try {
+			if (resultSet == null || !resultSet.first()) return 0;
+			
+			int i = 0;
+			do {
+				i++;
+			} while(resultSet.next());
+			return i;
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		return 0;
 	}
 
 }
